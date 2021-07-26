@@ -18,7 +18,6 @@ Measurement = Base.classes.measurement
 
 session = Session(engine)
 
-
 app = Flask(__name__)
 
 @app.route("/")
