@@ -57,7 +57,7 @@ def station():
 @app.route("/api/v1.0/tobs")
 def tobs():
     tobs_results = session.query(Measurement.station, Measurement.tobs).\
-        filter(Measurement.date.between('2016-08-23', '2017-08-23')).all()
+        filter(Measurement.dt.between('2016-08-23', '2017-08-23')).all()
     tobs_list = []
     for i in tobs:
         dict = {}
