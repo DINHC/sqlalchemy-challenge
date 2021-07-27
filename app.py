@@ -20,13 +20,13 @@ session = Session(engine)
 
 app = Flask(__name__)
 
-# def calc_temps(start_date, end_date):
-#     return session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
-#         filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
-#Placed into start
 def calc_temps(start_date, end_date):
     return session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
-        filter(Measurement.date >= start_date).all()
+        filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
+#Placed into start
+# def calc_temps(start_date, end_date):
+#     return session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+#         filter(Measurement.date >= start_date).all()
 
 @app.route("/")
 def main():
@@ -94,12 +94,14 @@ def tobs():
 
 @app.route("/api/v1.0/<start>")
 def start(start):
-    final_date = session.query(func.max(func.strftime("%Y-%m-%d", Measurement.date))).all()
+    final_date_query = session.query(func.max(func.strftime("%Y-%m-%d", Measurement.date))).all()
     session.close()
-    last_date = final_date[0][0]
-    temps = calc_temps(start, last_date)
+    max_date_string = final_date_query[0][0]
+    max_date = dt.datetime.strptime(max_date_string, "%Y-%m-%d")
+    start = max_date - dt.timedelta(365)
+    temps = calc_temps(start, max_date_string)
     return_list = []
-    date_dict = {'start_date': start, 'end_date': last_date}
+    date_dict = {'start_date': start, 'end_date': max_date_string}
     return_list.append(date_dict)
     return_list.append({'Observation': 'TMIN', 'Temperature': temps[0][0]})
     return_list.append({'Observation': 'TAVG', 'Temperature': temps[0][1]})
@@ -108,15 +110,19 @@ def start(start):
 
 @app.route("/api/v1.0/<start>/<end>")
 def start_end(start, end):
-    temps = calc_temps(start, end)
+    end_date = session.query(func.max(func.strftime("%Y-%m-%d", Measurement.date))).all()
+    session.close()
+    last_date = end_date[0][0]
+    max_date = dt.datetime.strptime(last_date, "%Y-%m-%d")
+    start = max_date - dt.timedelta(365)
+    temps = calc_temps(start, max_date)
+    end = max_date
     return_list = []
     date_dict = {'start_date': start, 'end_date': end}
     return_list.append(date_dict)
     return_list.append({'Observation': 'TMIN', 'Temperature': temps[0][0]})
     return_list.append({'Observation': 'TAVG', 'Temperature': temps[0][1]})
     return_list.append({'Observation': 'TMAX', 'Temperature': temps[0][2]})
-    session.close()
     return jsonify(return_list)
-
 if __name__ == "__main__":
     app.run(debug=True)
